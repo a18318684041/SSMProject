@@ -1,0 +1,71 @@
+LMGJS1G8XH1059668
+LMGJS3G89H1006570
+
+action=LOGIN_ASC&USER_CODE=9999&PASSWORD=c4ca4238a0b923820dcc509a&ENTITY_CODE=GQ990112&CLIENT_VERSION=1.0.4.0
+
+
+南充长兴西物	717994133	geniustec402	DSCR020	9999	1
+云南长汇	729902696	geniustec402	DYNA040	SH01	ljg199095
+攀枝花长禧	728863394	geniustec402	DSCD020	0004	D838803
+重庆长祺	735134025	geniustec402	DCQA080	0019	zx66666
+北京长申	734875505		dbja090	0040	89368777
+
+
+
+action=UNLOCK&TABLE_NAME=TT_REPAIR_ORDER&NO_NAME=RO_NO&NO_VALUE=RO1804120112&LOCK_NAME=LOCK_USER&PAGE_SIZE=100&PAGE_NUMBER=1&Checked=False&IsAddedBySystem=False&RECORD_ID=0&TOTAL_COUNT=0&UPDATE_STATUS=Added
+	
+action=QUERY_REPORT_INOUT_DETAIL&SHEET_NO=RO1804090004&PAGE_SIZE=100&PAGE_NUMBER=1&Checked=False&IsAddedBySystem=False&RECORD_ID=0&TOTAL_COUNT=0&UPDATE_STATUS=Added
+
+	
+https://gt7.com.cn/svn/geniustec/GBOXClientCJ/trunk
+
+		//根据结算时间进行工单列表的爬取
+		String result = dmsClient.postBlanceTime(dateStr);
+		JSONObject wkListJson = new JSONObject(result);
+		List<HashMap<String, String>> wkList = new ArrayList<>();
+		
+		
+		FormatWorkorderList formatWorkorderList = new FormatWorkorderList();
+		formatWorkorderList.find(wkList, wkListJson);
+		
+		
+		if(wkList.size()>0) {
+			
+			int count = 1;			
+			for (HashMap<String, String> hashMap : wkList) {
+				
+				//获取到工单号
+				String WorkOrderCode = hashMap.get("WorkOrderCode");
+				String WorkOrderTotalWorkTimeMoney = hashMap.get("WorkOrderTotalWorkTimeMoney");
+				String WorkOrderTotalPartsMoney = hashMap.get("WorkOrderTotalPartsMoney");
+				String WorkOrderMemo = hashMap.get("WorkOrderMemo");
+				String wkResult =  dmsClient.postWorkOrdercode(WorkOrderCode);
+				GBOXUpload gboxUpload = new GBOXUpload();
+				JSONObject wkResultJson = new JSONObject(wkResult);
+				
+				//工单信息
+				FormatWorkorder formatWorkorder = new FormatWorkorder();				 
+				JSONObject wkJson = new JSONObject();
+				formatWorkorder.find(wkJson, wkResultJson,cacheMap);
+				wkJson.put("workOrderRecordedDate", dateStr);
+				wkJson.put("workOrderTotalWorkTimeMoney", WorkOrderTotalWorkTimeMoney);
+				wkJson.put("workOrderTotalPartsMoney", WorkOrderTotalPartsMoney);
+				wkJson.put("workOrderMemo", WorkOrderMemo);
+				
+				
+				// 写OWNER_NO 文件
+				String OWNER_NO = wkJson.optString("OWNER_NO");
+				String CustomCarVIN = wkJson.optString("customCarVIN");				
+				
+				if(CustomCarVIN!=null&&!CustomCarVIN.equals("")) {
+					
+					FileUtils.write(new File("car_vin/" + CustomCarVIN), OWNER_NO ,"utf-8");
+				
+				}	
+				//上传工单
+				//gboxUpload.uploadWK(dateStr, WorkOrderCode, wkJson);				
+				logger.info("[WK] "+ "(" + count +"/"+ wkList.size() + ") " +WorkOrderCode);
+				count ++;
+			} 
+			
+		}

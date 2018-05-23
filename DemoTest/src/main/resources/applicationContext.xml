@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- 设置spring扫描的目录 -->
+	<context:component-scan base-package="demo"></context:component-scan>
+
+	<context:property-placeholder location="classpath:jdbc.properties"/>
+	<!-- 配置数据源 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init">
+		<!-- 数据库基本信息 -->
+    	<property name="driverClassName" value="${mysql.driver}"/>
+    	<property name="url" value="${mysql.url}"/>
+    	<property name="username" value="${mysql.username}"/>
+    	<property name="password" value="${mysql.password}"/>
+		<!-- 初始化链接大小 -->
+		<property name="initialSize" value="${mysql.initialSize}" />
+		<!-- 连接池最大数量 -->
+		<property name="maxActive" value="${mysql.maxActive}" />
+		<!-- 连接池最大空闲 -->
+		<property name="maxIdle" value="${mysql.maxIdle}" />
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="${mysql.minIdle}"></property>
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="${mysql.maxWait}" />
+	</bean>
+
+	<!-- sqlSessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 指定mybatics的全局配置文件的位置 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+		<property name="dataSource" ref="dataSource"></property>
+		<!-- 配置mapper文件所在的位置 -->
+		<property name="mapperLocations">
+			<list>
+				<value>classpath:demo/**/*Mapper.xml</value>
+				<value>classpath:mybatis/**/*Mapper.xml</value>
+			</list>
+		</property>
+	</bean>
+
+
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="demo.Mapper" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+
+	<!-- 配置sqlSessionFactory持久化模板 -->
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSessionFactory"></constructor-arg>
+		<constructor-arg name="executorType" value="BATCH"></constructor-arg>
+	</bean>
+
+	<!-- 配置事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+
+	<!-- 配置事务传播行为 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true" />
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="select*" read-only="true" />
+			<tx:method name="*" propagation="REQUIRED" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- 配置事务切入点 -->
+	<aop:config>
+		<aop:pointcut expression="execution(* demo.service.*.*(..))"
+			id="pointCut" />
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pointCut" />
+	</aop:config>
+
+	<!-- 开始申明事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+</beans>

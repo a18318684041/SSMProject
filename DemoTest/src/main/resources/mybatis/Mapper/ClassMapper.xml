@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="demo.Mapper.ClassDao">
+	<!--设置domain类和数据库中表的字段一一对应，注意数据库字段和domain类中的字段名称不致，此处一定要！ -->
+	<resultMap id="BaseResultMap" type="demo.bean.Clazz">
+		
+		<id column="ID" property="id" jdbcType="INTEGER" />
+		<result column="Name" property="name" jdbcType="CHAR" />
+		
+		<!-- 一个班级可以对应多个学生 -->
+		<collection property="stuList" ofType="demo.bean.Student" >  
+            <id column="StuNo" property="stuNo"/>  
+            <result column="stuName" property="stuName"/>  
+            <result column="ClassNo" property="classNo"/>  
+        </collection>
+        
+	</resultMap>
+	
+	<resultMap id="ClassResultMap" type="demo.bean.Clazz">
+		
+		<id column="ID" property="id" jdbcType="INTEGER" />
+		<result column="Name" property="name" jdbcType="CHAR" />
+        
+	</resultMap>
+	
+    <select id="selectStudentById"  resultMap="BaseResultMap">  
+        select c.*, s.*,s.Name as stuName , s.ID as StuNo from class c, student s where c.ID  = s.classNo and c.ID = #{id}  
+    </select>  
+    
+    <select id="getClassByID" resultMap="ClassResultMap">
+    	select * from class 
+    	<where>
+    		<if test="name != null">
+         		Name = #{name}
+    		</if>    		
+    		<if test="id != null">
+         		And ID = #{id}
+    		</if> 
+    	</where>
+    </select>
+    
+    
+
+</mapper>
